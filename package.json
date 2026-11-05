@@ -1,0 +1,59 @@
+{
+  "name": "beat-uploader",
+  "productName": "Beat Uploader",
+  "version": "1.1.0",
+  "description": "Заливка битов на YouTube по шаблону",
+  "author": {
+    "name": "jelos8vetoi",
+    "url": "https://t.me/jelos8vetoi"
+  },
+  "license": "MIT",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/text.test.js test/pipeline.test.js test/i18n.test.js",
+    "dist": "electron-builder --win"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "playwright-core": "^1.48.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "local.beatuploader.app",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "Beat Uploader",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

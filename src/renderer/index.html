@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data: https:; style-src 'self'; script-src 'self'">
+  <title>Beat Uploader</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-row">
+      <div class="brand">Beat Uploader</div>
+      <div class="lang-switch" role="group" aria-label="Язык" data-no-i18n>
+        <button type="button" id="lang-ru">RU</button>
+        <button type="button" id="lang-en">EN</button>
+      </div>
+    </div>
+    <button id="add-beat" class="dropzone" type="button">
+      <strong>Закинь биты сюда</strong>
+      <span>или нажми, чтобы выбрать файл</span>
+    </button>
+    <ul id="beat-list" class="beat-list"></ul>
+    <button id="open-channel" class="side-link" type="button">Статистика канала</button>
+    <button id="open-settings" class="side-link" type="button">Настройки и каналы</button>
+  </aside>
+
+  <main class="main">
+    <section id="empty" class="empty">
+      <h1>Пока нет битов</h1>
+      <p>Перетащи mp3 или wav в это окно. Каждый файл станет отдельным черновиком.</p>
+    </section>
+
+    <section id="editor" class="editor" hidden>
+      <nav id="tabs" class="tabs" role="tablist"></nav>
+      <div class="panels">
+        <div class="panel" data-panel="beat">
+          <label class="field"><span>Название бита</span>
+            <div class="row"><input data-field="name"><button type="button" id="dice" class="ghost">Случайное</button></div>
+          </label>
+          <div class="grid2">
+            <label class="field"><span>BPM</span><input data-field="bpm" inputmode="numeric" placeholder="140"></label>
+            <label class="field"><span>Тональность</span><input data-field="key" list="keys" placeholder="C minor"></label>
+          </div>
+          <datalist id="keys"></datalist>
+          <label class="field"><span>Канал</span><select data-field="accountId" id="account-select"></select></label>
+          <p id="account-status" class="status" role="status"></p>
+          <p class="file-line">Файл: <span id="audio-name"></span></p>
+        </div>
+
+        <div class="panel" data-panel="artists">
+          <label class="field"><span>Чей тайп-бит</span>
+            <input data-field="artists" placeholder="Mac Miller, J. Cole">
+            <small>Артисты через запятую. По ним строятся название, теги и плейлисты.</small>
+          </label>
+          <label class="field"><span>Название видео <em id="title-count"></em></span>
+            <input data-field="title">
+          </label>
+          <div class="variants">
+            <span class="hint">Варианты названия</span>
+            <div id="title-variants" class="variant-list" data-no-i18n></div>
+          </div>
+          <div class="row">
+            <button type="button" id="generate" class="primary">Сгенерировать название и теги</button>
+            <button type="button" id="reset-title" class="ghost">Собрать название заново</button>
+          </div>
+          <p id="tag-status" class="status" role="status"></p>
+        </div>
+
+        <div class="panel" data-panel="description">
+          <label class="field grow"><span>Описание видео</span>
+            <textarea data-field="description" class="grow"></textarea>
+            <small>Собирается само: название, тональность, BPM, ссылки, теги. Можно править вручную.</small>
+          </label>
+          <div class="row"><button type="button" id="reset-desc" class="ghost">Собрать описание заново</button></div>
+        </div>
+
+        <div class="panel" data-panel="links">
+          <p class="hint">Ссылки общие для всех битов. Можно вписать просто айди, полную ссылку приложение соберёт само.</p>
+          <label class="field"><span>Instagram</span><input data-link="instagram" placeholder="айди или ссылка"></label>
+          <label class="field"><span>Telegram</span><input data-link="telegram" placeholder="айди или ссылка"></label>
+          <label class="field"><span>BeatStars</span><input data-link="beatstars" placeholder="айди или ссылка"></label>
+        </div>
+
+        <div class="panel" data-panel="tags">
+          <label class="field grow"><span>Теги YouTube (RapidTags) <em id="tags-count"></em></span>
+            <textarea data-field="ytTags" class="grow" placeholder="Теги через запятую"></textarea>
+          </label>
+          <div class="row">
+            <button type="button" id="fetch-tags" class="primary">Подобрать теги</button>
+            <button type="button" id="rapid-login" class="ghost">Войти в RapidTags</button>
+            <button type="button" id="use-prozavr" class="ghost">Подставить из prozavr</button>
+          </div>
+          <p id="tag-status-2" class="status" role="status"></p>
+          <p class="hint" id="prozavr-summary"></p>
+        </div>
+
+        <div class="panel" data-panel="media">
+          <div class="cover-row">
+            <button type="button" id="pick-image" class="cover" aria-label="Выбрать картинку">
+              <img id="cover-img" alt="" hidden>
+              <span id="cover-hint">Закинь картинку<br>или нажми</span>
+            </button>
+            <label class="field grow"><span>Плейлисты</span>
+              <textarea data-field="playlists" class="grow" placeholder="Mac Miller Type Beats"></textarea>
+              <small>По одному на строку. Если плейлиста нет, он создастся на канале при загрузке.</small>
+            </label>
+          </div>
+          <div class="image-search">
+            <h3 class="section-title">Найти фото</h3>
+            <form id="image-form" class="row">
+              <input id="image-query" placeholder="Что искать, например: dark anime aesthetic" aria-label="Что искать">
+              <select id="image-source" aria-label="Где искать">
+                <option value="web">В интернете</option>
+                <option value="pinterest">Pinterest</option>
+              </select>
+              <button type="submit" id="image-go" class="primary">Найти</button>
+            </form>
+            <p id="image-status" class="status" role="status"></p>
+            <div id="image-results" class="image-grid"></div>
+          </div>
+        </div>
+
+        <div class="panel" data-panel="publish">
+          <fieldset class="modes">
+            <legend>Как опубликовать</legend>
+            <label><input type="radio" name="mode" value="public"> Сразу открыто</label>
+            <label><input type="radio" name="mode" value="scheduled"> Запланировать</label>
+            <label><input type="radio" name="mode" value="unlisted"> По ссылке</label>
+            <label><input type="radio" name="mode" value="private"> Приватно</label>
+          </fieldset>
+          <label class="field" id="schedule-field" hidden><span>Дата и время</span><input type="datetime-local" data-field="publishAt"></label>
+          <label class="check"><input type="checkbox" data-check="captions"> Субтитры с названием видео</label>
+          <label class="check"><input type="checkbox" data-check="endScreen"> Случайная заставка в конце ролика</label>
+          <label class="check"><input type="checkbox" data-check="notify"> Уведомить подписчиков</label>
+          <label class="check"><input type="checkbox" id="short-on" data-check="short"> Ещё и шортс из самой громкой части бита</label>
+          <p class="hint">Категория: Музыка. Язык: английский. Не для детей.</p>
+          <div id="comment-box" class="comment-box">
+            <label class="check"><input type="checkbox" id="first-comment-on" data-check="firstComment"> Первый комментарий после публикации</label>
+            <div class="grid2">
+              <label class="field"><span>Текст</span><input data-field="firstCommentText" placeholder="бай"></label>
+              <label class="field"><span>Ссылка</span>
+                <select data-field="firstCommentLink">
+                  <option value="beatstars">BeatStars</option>
+                  <option value="telegram">Telegram</option>
+                </select>
+              </label>
+            </div>
+            <p id="comment-preview" class="hint"></p>
+          </div>
+          <div id="result" class="result" hidden></div>
+        </div>
+
+        <div class="panel" data-panel="stats">
+          <p id="stats-empty" class="hint">Статистика появится после заливки видео.</p>
+          <div id="stats-body" hidden>
+            <div class="tiles">
+              <div class="tile"><strong id="stat-views">—</strong><span>Просмотры</span></div>
+              <div class="tile"><strong id="stat-likes">—</strong><span>Лайки</span></div>
+              <div class="tile"><strong id="stat-comments">—</strong><span>Комментарии</span></div>
+            </div>
+            <div class="row">
+              <button type="button" id="stats-refresh" class="ghost">Обновить</button>
+              <span id="stats-meta" class="hint"></span>
+            </div>
+            <p id="stats-status" class="status" role="status"></p>
+            <h3 class="section-title">Комментарии</h3>
+            <p id="comments-status" class="status" role="status"></p>
+            <ul id="comments" class="comments"></ul>
+            <button type="button" id="comments-more" class="ghost" hidden>Показать ещё</button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="actions">
+        <div class="progress-wrap" id="progress-wrap" hidden>
+          <span id="progress-label"></span>
+          <div class="progress"><div id="progress-bar"></div></div>
+        </div>
+        <button type="button" id="delete-item" class="ghost danger">Удалить</button>
+        <button type="button" id="save-draft" class="ghost">Сохранить черновик</button>
+        <button type="button" id="upload" class="primary">Загрузить на YouTube</button>
+      </footer>
+    </section>
+
+    <section id="channel" class="settings" hidden>
+      <h1>Статистика канала</h1>
+      <div class="row">
+        <select id="channel-select" aria-label="Канал"></select>
+        <button type="button" id="channel-refresh" class="ghost">Обновить</button>
+        <span id="channel-meta" class="hint"></span>
+      </div>
+      <p id="channel-status" class="status" role="status"></p>
+      <div class="tiles">
+        <div class="tile"><strong id="channel-subs">—</strong><span>Подписчики</span></div>
+        <div class="tile"><strong id="channel-views">—</strong><span>Просмотры</span></div>
+        <div class="tile"><strong id="channel-videos">—</strong><span>Открытые видео</span></div>
+      </div>
+      <h2>Какие названия работают</h2>
+      <p id="templates-status" class="hint"></p>
+      <ul id="templates-list" class="template-list"></ul>
+      <h2>Последние видео</h2>
+      <ul id="channel-recent" class="video-list"></ul>
+    </section>
+
+    <section id="settings" class="settings" hidden>
+      <h1>Настройки</h1>
+      <h2>Каналы YouTube</h2>
+      <ul id="accounts" class="accounts"></ul>
+      <div class="row"><button type="button" id="connect" class="primary">Подключить канал</button></div>
+      <p id="settings-status" class="status" role="status"></p>
+
+      <h2>Ключ Google</h2>
+      <p class="hint">Как его получить, написано в README.md. Проще всего загрузить файл, скачанный кнопкой Download JSON.</p>
+      <div class="row"><button type="button" id="import-key" class="ghost">Загрузить файл ключа</button></div>
+      <label class="field"><span>Client ID</span><input data-setting="googleClientId"></label>
+      <label class="field"><span>Client Secret</span><input data-setting="googleClientSecret" type="password" id="secret"></label>
+
+      <h2>Шаблоны</h2>
+      <label class="field"><span>Варианты названия, по одному на строку</span><textarea id="templates-input"></textarea><small>{artists} {name} {bpm} {key} {year}. Новые биты получают их по очереди, так видно, какой лучше.</small></label>
+      <label class="field"><span>Плейлист</span><input data-setting="playlistTemplate"><small>{artist}</small></label>
+      <div class="grid2">
+        <label class="field"><span>Запрос в prozavr</span><input data-setting="prozavrKeyword"></label>
+        <label class="field"><span>Запрос в RapidTags</span><input data-setting="rapidKeyword"></label>
+      </div>
+
+      <h2>Автоподбор</h2>
+      <label class="check"><input type="checkbox" id="auto-fill"> Подбирать теги и фото сразу при добавлении бита</label>
+      <p class="hint">Артистов приложение берёт из имени файла, например «Drake x Future Type Beat - Cold Rain.mp3». Фото и названия не повторяются.</p>
+      <div class="grid2">
+        <label class="field"><span>Где искать фото</span>
+          <select data-setting="autoImageSource">
+            <option value="web">В интернете</option>
+            <option value="pinterest">Pinterest</option>
+          </select>
+        </label>
+        <label class="field"><span>Запрос для фото</span><input data-setting="imageQuery"><small>{artist}</small></label>
+      </div>
+      <label class="field narrow"><span>Длина шортса, секунд</span><input type="number" min="10" max="60" data-setting="shortSeconds"></label>
+
+      <h2>Теги в описании</h2>
+      <div class="grid3">
+        <label class="field"><span>Тегов через запятую</span><input type="number" min="0" data-count="comma"></label>
+        <label class="field"><span>Строк с тегами</span><input type="number" min="0" data-count="lines"></label>
+        <label class="field"><span>Хештегов</span><input type="number" min="0" data-count="hashtags"></label>
+      </div>
+
+      <h2>Заставка в конце</h2>
+      <div class="row">
+        <button type="button" id="pick-end-dir" class="ghost">Выбрать папку</button>
+        <span id="end-dir" class="file-line"></span>
+      </div>
+      <label class="field narrow"><span>Сколько секунд показывать</span><input type="number" min="5" max="60" data-setting="endSeconds"></label>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="../shared/text.js"></script>
+  <script src="../shared/i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
